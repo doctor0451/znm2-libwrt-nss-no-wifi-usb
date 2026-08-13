@@ -103,54 +103,41 @@ set_config CONFIG_LUCI_LANG_zh_Hans
 for sym in \
   CONFIG_PACKAGE_luci-i18n-base-zh-cn \
   CONFIG_PACKAGE_luci-i18n-firewall-zh-cn \
-  CONFIG_PACKAGE_luci-i18n-passwall-zh-cn \
   CONFIG_PACKAGE_luci-i18n-mosdns-zh-cn; do
   set_config "$sym"
 done
+# 移除 PassWall 中文
+unset_config CONFIG_PACKAGE_luci-i18n-passwall-zh-cn
 
-echo "==== Force required plugins ===="
-for sym in \
-  CONFIG_PACKAGE_luci-app-passwall \
-  CONFIG_PACKAGE_luci-i18n-passwall-zh-cn \
-  CONFIG_PACKAGE_luci-app-mosdns \
-  CONFIG_PACKAGE_luci-i18n-mosdns-zh-cn \
-  CONFIG_PACKAGE_mosdns \
-  CONFIG_PACKAGE_v2dat \
-  CONFIG_PACKAGE_luci-app-lucky \
-  CONFIG_PACKAGE_lucky \
-  CONFIG_PACKAGE_luci-app-gecoosac \
-  CONFIG_PACKAGE_microsocks \
-  CONFIG_PACKAGE_luci-app-microsocks; do
-  set_config "$sym"
-done
+echo "==== Force required plugins (移除 PassWall 和 Lucky) ===="
+# 移除 PassWall
+unset_config CONFIG_PACKAGE_luci-app-passwall
+unset_config CONFIG_PACKAGE_luci-i18n-passwall-zh-cn
 
-unset_config CONFIG_PACKAGE_luci-app-microsocks-lite
-
-echo "==== Force minimal PassWall cores ===="
+# 移除 PassWall cores
 for sym in \
   CONFIG_PACKAGE_chinadns-ng \
   CONFIG_PACKAGE_dns2socks \
   CONFIG_PACKAGE_ipt2socks \
   CONFIG_PACKAGE_v2ray-geodata \
   CONFIG_PACKAGE_xray-core; do
-  set_config "$sym"
-done
-
-echo "==== Disable heavy PassWall cores ===="
-for sym in \
-  CONFIG_PACKAGE_haproxy \
-  CONFIG_PACKAGE_naiveproxy \
-  CONFIG_PACKAGE_shadowsocks-rust-sslocal \
-  CONFIG_PACKAGE_shadowsocks-rust-ssserver \
-  CONFIG_PACKAGE_shadowsocksr-libev-ssr-local \
-  CONFIG_PACKAGE_simple-obfs \
-  CONFIG_PACKAGE_sing-box \
-  CONFIG_PACKAGE_trojan-plus \
-  CONFIG_PACKAGE_tuic-client \
-  CONFIG_PACKAGE_v2ray-core \
-  CONFIG_PACKAGE_xray-plugin; do
   unset_config "$sym"
 done
+
+# 移除 Lucky
+unset_config CONFIG_PACKAGE_luci-app-lucky
+unset_config CONFIG_PACKAGE_lucky
+
+# 保留其他插件
+set_config CONFIG_PACKAGE_luci-app-mosdns
+set_config CONFIG_PACKAGE_luci-i18n-mosdns-zh-cn
+set_config CONFIG_PACKAGE_mosdns
+set_config CONFIG_PACKAGE_v2dat
+set_config CONFIG_PACKAGE_luci-app-gecoosac
+set_config CONFIG_PACKAGE_microsocks
+set_config CONFIG_PACKAGE_luci-app-microsocks
+
+unset_config CONFIG_PACKAGE_luci-app-microsocks-lite
 
 echo "==== Remove WiFi completely ===="
 for sym in \
@@ -218,7 +205,8 @@ unset_config CONFIG_PACKAGE_luci-app-microsocks-lite
 set_config CONFIG_LUCI_LANG_zh_Hans
 set_config CONFIG_PACKAGE_luci-i18n-base-zh-cn
 set_config CONFIG_PACKAGE_luci-i18n-firewall-zh-cn
-set_config CONFIG_PACKAGE_luci-i18n-passwall-zh-cn
+# 移除 PassWall 中文
+unset_config CONFIG_PACKAGE_luci-i18n-passwall-zh-cn
 set_config CONFIG_PACKAGE_luci-i18n-mosdns-zh-cn
 
 echo "==== Second defconfig ===="
@@ -231,7 +219,7 @@ echo "==== Check LAN / DHCP / SSH ===="
 grep -E '^CONFIG_PACKAGE_(dnsmasq-full|netifd|odhcp6c|odhcpd-ipv6only|kmod-dsa|kmod-dsa-qca8k|kmod-phy-qca83xx|kmod-gpio-button-hotplug|dropbear|openssh-sftp-server)=y' .config || true
 
 echo "==== Check Chinese / Aurora / microsocks ===="
-grep -E '^CONFIG_LUCI_LANG_zh_Hans=y|^CONFIG_PACKAGE_luci-i18n-base-zh-cn=y|^CONFIG_PACKAGE_luci-i18n-firewall-zh-cn=y|^CONFIG_PACKAGE_luci-i18n-passwall-zh-cn=y|^CONFIG_PACKAGE_luci-i18n-mosdns-zh-cn=y|^CONFIG_PACKAGE_luci-theme-aurora=y|^CONFIG_PACKAGE_microsocks=y|^CONFIG_PACKAGE_luci-app-microsocks=y' .config || true
+grep -E '^CONFIG_LUCI_LANG_zh_Hans=y|^CONFIG_PACKAGE_luci-i18n-base-zh-cn=y|^CONFIG_PACKAGE_luci-i18n-firewall-zh-cn=y|^CONFIG_PACKAGE_luci-i18n-mosdns-zh-cn=y|^CONFIG_PACKAGE_luci-theme-aurora=y|^CONFIG_PACKAGE_microsocks=y|^CONFIG_PACKAGE_luci-app-microsocks=y' .config || true
 
 echo "==== Strict check SSH ===="
 if ! grep -q '^CONFIG_PACKAGE_dropbear=y' .config; then
@@ -253,6 +241,18 @@ fi
 echo "==== Strict check Chinese language support ===="
 if ! grep -q '^CONFIG_LUCI_LANG_zh_Hans=y' .config && ! grep -q '^CONFIG_PACKAGE_luci-i18n-base-zh-cn=y' .config; then
   echo "ERROR: Chinese language support is missing"
+  exit 1
+fi
+
+echo "==== Strict check PassWall removed ===="
+if grep -E '^CONFIG_PACKAGE_(luci-app-passwall|xray-core|v2ray-geodata|chinadns-ng|dns2socks|ipt2socks)=y' .config; then
+  echo "ERROR: PassWall packages still enabled"
+  exit 1
+fi
+
+echo "==== Strict check Lucky removed ===="
+if grep -E '^CONFIG_PACKAGE_(luci-app-lucky|lucky)=y' .config; then
+  echo "ERROR: Lucky packages still enabled"
   exit 1
 fi
 
