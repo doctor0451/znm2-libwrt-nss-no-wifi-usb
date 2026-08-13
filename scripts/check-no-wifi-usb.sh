@@ -33,16 +33,32 @@ else
   echo 'OK: USB packages disabled'
 fi
 
-echo '==== 检查四个插件是否启用 ===='
-for p in luci-app-passwall luci-app-mosdns luci-app-lucky luci-app-gecoosac; do
+echo '==== 检查四个插件是否启用（PassWall 和 Lucky 已移除） ===='
+for p in luci-app-mosdns luci-app-gecoosac; do
   symbol="CONFIG_PACKAGE_${p}=y"
   if grep -q "^${symbol}$" .config; then
     echo "OK: ${p} enabled"
   else
     echo "ERROR: ${p} not enabled"
     fail=1
-  fi
-done
+  done
+
+# 检查 PassWall 和 Lucky 是否确实被移除
+echo '==== 检查 PassWall 是否被移除 ===='
+if grep -q '^CONFIG_PACKAGE_luci-app-passwall=y' .config; then
+  echo 'ERROR: luci-app-passwall still enabled'
+  fail=1
+else
+  echo 'OK: luci-app-passwall removed'
+fi
+
+echo '==== 检查 Lucky 是否被移除 ===='
+if grep -q '^CONFIG_PACKAGE_luci-app-lucky=y' .config || grep -q '^CONFIG_PACKAGE_lucky=y' .config; then
+  echo 'ERROR: Lucky packages still enabled'
+  fail=1
+else
+  echo 'OK: Lucky removed'
+fi
 
 if [ "$fail" -ne 0 ]; then
   echo '配置检查失败，请查看上面的 ERROR。'
